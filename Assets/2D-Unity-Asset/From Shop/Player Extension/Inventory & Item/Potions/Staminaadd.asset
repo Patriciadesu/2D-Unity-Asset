@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62912b254ca41fb4291255ffab0b975a, type: 3}
+  m_Name: Staminaadd
+  m_EditorClassIdentifier: 
+  itemimage: {fileID: 618945073, guid: b6573848ba3c6144b9e6630bdfeb24ee, type: 3}
+  healthAmount: 0
+  AddstaminaAmount: 10
+  Damageamount: 0
+  speedaddamount: 0
+  usetime: 0
+  type: 1
