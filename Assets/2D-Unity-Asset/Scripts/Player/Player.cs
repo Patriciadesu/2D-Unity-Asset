@@ -1,68 +1,73 @@
 using NaughtyAttributes;
+using System;
 using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
-using static UnityEditor.Experimental.GraphView.GraphView;
-
 
 [ExecuteAlways]
 public partial class Player : Singleton<Player>
 {
     #region Player Properties
 
-    #region Camera Settings
-    public enum CameraType
+    #region Camera Settings (2D)
+    public enum Camera2DType
     {
-        FirstPerson,
-        ThirdPerson
+        SideScroll,
+        TopDown
     }
-    public float mouseSensitivity = 2f;
-    [Foldout("Camera", true)] public CameraType cameraType;
-    [Foldout("Camera", true), SerializeField, Range(30, 120)] float cameraFOV;
-    [Foldout("Camera", true), ShowIf("cameraType", CameraType.ThirdPerson), Range(0, 1)] public float cameraSide = 0.5f;
-    [Foldout("Camera", true), ShowIf("cameraType", CameraType.ThirdPerson)] public float cameraDistance = 5f;
-    [Foldout("Camera", true), ShowIf("cameraType", CameraType.ThirdPerson), Range(-1, 2)] public float yOffset = -.4f;
-    private float xRotation = 0f;
-    private float tpsYaw = 0f;
-    private float tpsPitch = 10f;
+
+    [Foldout("Camera", true)] public Camera2DType camera2DType = Camera2DType.SideScroll;
+    [Foldout("Camera", true), SerializeField, Range(2f, 30f)] float cameraOrthoSize = 6f;
+    [Foldout("Camera", true)] public float cameraZOffset = -10f;
     [Foldout("DO NOT TOUCH")] public Camera camera;
-    [Foldout("DO NOT TOUCH")] public Transform fpsCameraPivot;
-    [Foldout("DO NOT TOUCH")] public Camera tpsCamera;
-    [Foldout("DO NOT TOUCH")] public CinemachineThirdPersonFollow tpsVirtualCamera;
-    [Foldout("DO NOT TOUCH")] public Transform tpsCameraPivot;
+    [Foldout("DO NOT TOUCH")] public CinemachineCamera vcam2D;
+    [Foldout("DO NOT TOUCH")] public CinemachineConfiner2D confiner2D;
+    [Foldout("DO NOT TOUCH"), ShowIf(nameof(useConfiner))] public Collider2D confinerShape2D;
+    [Foldout("Camera", true)] public bool useConfiner = false;
+    [Foldout("Camera", true)] public Vector2 followOffset = new Vector2(0f, 0.5f);
     #endregion
 
-    #region Movement Settings
+    #region Movement Settings (2D)
     public float Speed => (speed + additionalSpeed) * speedMultiplier;
-    [Foldout("Movement Settings", true), SerializeField, Range(0, 100)] private float speed = 5f;
-    [Foldout("Movement Settings", true), Range(0, 20)] public float jumpForce = 10f;
-    [Foldout("Movement Settings", true), Range(0, 10)] public float fallMultiplier = 3f;
-    [Foldout("Movement Settings", true), Range(0, 20)] public float gravityMultiplier = 2.5f;
+
+    [Foldout("Movement Settings", true), SerializeField, Range(0, 30)] private float speed = 6f;
+
+    [Foldout("Movement Settings", true), ShowIf(nameof(IsSideScroll)), Range(0, 25)]
+    public float jumpForce = 12f;
+
+    [Foldout("Movement Settings", true), ShowIf(nameof(IsSideScroll)), Range(0, 10)]
+    public float fallMultiplier = 2.5f;
+
+    [Foldout("Movement Settings", true), ShowIf(nameof(IsSideScroll)), Range(0, 20)]
+    public float gravityMultiplier = 2.5f;
+
+    [Foldout("Movement Settings", true)] public bool autoFlipSpriteX = true;
+
     [HideInInspector] public float speedMultiplier = 1f;
-    [HideInInspector] public float additionalSpeed = 0;
+    [HideInInspector] public float additionalSpeed = 0f;
+
     [HideInInspector] public List<IUseStamina> staminaComponentStates = new List<IUseStamina>();
     public bool canGenerateStamina => staminaComponentStates.TrueForAll(x => !x.isUsingStamina);
-    public bool canHit;
-    
+    public bool canHit = true;
     #endregion
 
     #region Movement Buffer
-    private float coyoteTime = 0.01f;
-    private float jumpBufferTime = 0.05f;
+    private float coyoteTime = 0.1f;
+    private float jumpBufferTime = 0.1f;
     private float lastGroundedTime;
     private float lastJumpPressedTime;
     #endregion
 
-    #region Ground Check
-    private float groundCheckDistance = 0.5f;
-    private float capsuleHeight => capsuleCollider.height;
-    private float capsuleRadius => capsuleCollider.radius;
+    #region Ground Check (2D)
+    private float groundCheckDistance = 0.1f;
+    private CapsuleCollider2D capsule2D => _capsule2D;
     #endregion
 
     #region Components
-    [HideInInspector] public Rigidbody rigidbody;
+    [HideInInspector] public Rigidbody2D rigidbody;
     [HideInInspector] public Animator animator;
-    [HideInInspector] public CapsuleCollider capsuleCollider;
+    [HideInInspector] public CapsuleCollider2D _capsule2D;
+    private SpriteRenderer _spriteRenderer;
     #endregion
 
     [HideInInspector] public Vector3 lastCheckpoint;
@@ -71,38 +76,40 @@ public partial class Player : Singleton<Player>
     public bool isGrounded = true;
     [HideInInspector] public List<ICancleGravity> cancleGravityComponents = new List<ICancleGravity>();
     public bool canApplyGravity => cancleGravityComponents.TrueForAll(x => x.canApplyGravity);
+
     [HideInInspector] public bool canMove = true;
-    [HideInInspector] public bool canRotateCamera = true;
+    [HideInInspector] public bool canRotateCamera = true; // kept for API parity; unused in 2D
 
     #region Player Delegates
     public delegate void FixedUpdateDelegate();
     public FixedUpdateDelegate OnFixedUpdate;
     public delegate void UpdateDelegate();
     public UpdateDelegate OnUpdate;
-    public delegate void CollisionEnterDelegate(Collision collision);
-    public CollisionEnterDelegate OnCollisionEnterEvent;
-    public delegate void CollisionStayDelegate(Collision collision);
-    public CollisionStayDelegate OnCollisionStayEvent;
-    public delegate void CollisionExitDelegate(Collision collision);
-    public CollisionExitDelegate OnCollisionExitEvent;
-    public delegate void TriggerEnterDelegate(Collider other);
-    public TriggerEnterDelegate OnTriggerEnterEvent;
-    public delegate void TriggerStayDelegate(Collider other);
-    public TriggerStayDelegate OnTriggerStayEvent;
-    public delegate void TriggerExitDelegate(Collider other);
-    public TriggerExitDelegate OnTriggerExitEvent;
 
+    // 2D versions; names preserved for minimal breakage
+    public delegate void CollisionEnterDelegate(Collision2D collision);
+    public CollisionEnterDelegate OnCollisionEnterEvent;
+    public delegate void CollisionStayDelegate(Collision2D collision);
+    public CollisionStayDelegate OnCollisionStayEvent;
+    public delegate void CollisionExitDelegate(Collision2D collision);
+    public CollisionExitDelegate OnCollisionExitEvent;
+    public delegate void TriggerEnterDelegate(Collider2D other);
+    public TriggerEnterDelegate OnTriggerEnterEvent;
+    public delegate void TriggerStayDelegate(Collider2D other);
+    public TriggerStayDelegate OnTriggerStayEvent;
+    public delegate void TriggerExitDelegate(Collider2D other);
+    public TriggerExitDelegate OnTriggerExitEvent;
     #endregion
 
     // Extensions
     private PlayerExtension[] extensions;
 
     #endregion
-    
+
     #region Player Stats
     [Foldout("Player Stats", true), SerializeField, Range(0, 1000)] public float maxhealth = 100f;
     [Foldout("Player Stats", true), SerializeField, Range(0, 1000)] public float maxstamina = 100f;
-    [Foldout("Player Stats", true), SerializeField, Range(0, 50)] public float staminaRegenRate = 20f; // New: Stamina regen per second
+    [Foldout("Player Stats", true), SerializeField, Range(0, 50)] public float staminaRegenRate = 20f;
     [HideInInspector] public float currenthealth;
     [HideInInspector] public float currentstamina;
     #endregion
@@ -110,12 +117,18 @@ public partial class Player : Singleton<Player>
     #region Unity Methods
     void Awake()
     {
-        rigidbody = GetComponent<Rigidbody>();
+        rigidbody = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
-        capsuleCollider = GetComponent<CapsuleCollider>();
+        _capsule2D = GetComponent<CapsuleCollider2D>();
+        _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         currenthealth = maxhealth;
         currentstamina = maxstamina;
+
+        // Ensure camera ref in editor
+        if (!Application.isPlaying)
+            if (camera == null) camera = Camera.main;
     }
+
     void Start()
     {
         if (Application.isPlaying)
@@ -124,350 +137,338 @@ public partial class Player : Singleton<Player>
             SetUpdate();
             SetFixedUpdate();
             SetSpawnPoint(transform.position);
+
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
 
             staminaComponentStates.Clear();
             staminaComponentStates.AddRange(GetComponents<IUseStamina>());
 
-            foreach (var extension in extensions)
-            {
-                extension.OnStart(this);
-            }
+            foreach (var extension in extensions) extension.OnStart(this);
+
+            if (camera == null) camera = Camera.main;
+            SetUpCamera2D();
         }
     }
+
     void Update()
     {
         if (Application.isPlaying)
         {
             OnUpdate?.Invoke();
-            if (isGrounded)
-            {
-                lastGroundedTime = Time.time;
-                RegenerateStamina(); // Regenerate stamina when grounded
-            }
-            if (cameraType == CameraType.FirstPerson)
-            {
-                camera.transform.position = fpsCameraPivot.transform.position;
-            }
-            if (!canRotateCamera)
-            {
-                
-            }
+
+            // Grounded = always true in TopDown; SideScroll uses real ground check
+            if (IsTopDown) isGrounded = true;
+
+            if (isGrounded) lastGroundedTime = Time.time;
+
+            // Regen stamina when grounded (SideScroll) or always (TopDown)
+            if (IsTopDown || isGrounded) RegenerateStamina();
         }
         else
         {
-            SetUpCamera();
+            // Editor-time camera setup to avoid duplicate MainCameras
+            SetUpCamera2D();
             foreach (GameObject cam in GameObject.FindGameObjectsWithTag("MainCamera"))
-            {
-                if (cam != camera.gameObject)
-                {
+                if (camera != null && cam != camera.gameObject)
                     DestroyImmediate(cam);
-                }
-            }
         }
     }
+
     void FixedUpdate()
     {
         if (Application.isPlaying)
-        {
             OnFixedUpdate?.Invoke();
-        }
-    }
-    private void RegenerateStamina()
-    {
-        // Skip regeneration during sprint, roll, or dash
-        if (currentstamina < maxstamina && canGenerateStamina)
-        {
-            currentstamina += staminaRegenRate * Time.deltaTime;
-            if (currentstamina > maxstamina)
-            {
-                currentstamina = maxstamina;
-            }
-        }
-    }
-    public void TakeDamage(float amount)
-    {
-        if (canHit)
-        {
-            currenthealth -= Mathf.Max(amount, 0);
-            animator.SetTrigger("GetHit");
-            Debug.Log("Player took damage: " + amount + ", Current Health: " + currenthealth);
-            if (currenthealth <= 0)
-            {
-                currenthealth = 0;
-                Respawn();
-            }
-        }else
-        {
-           canHit = true;
-           animator.SetBool("isBlocking", false);
-        }
-    }
-    void OnCollisionEnter(Collision collision)
-    {
-        if (Application.isPlaying)
-        {
-            OnCollisionEnterEvent?.Invoke(collision);
-        }
-    }
-    void OnCollisionStay(Collision collision)
-    {
-        if (Application.isPlaying)
-        {
-            OnCollisionStayEvent?.Invoke(collision);
-        }
-    }
-    void OnCollisionExit(Collision collision)
-    {
-        if (Application.isPlaying)
-        {
-            OnCollisionExitEvent?.Invoke(collision);
-        }
-    }
-    void OnTriggerEnter(Collider other)
-    {
-        if (Application.isPlaying)
-        {
-            OnTriggerEnterEvent?.Invoke(other);
-        }
-    }
-    void OnTriggerStay(Collider other)
-    {
-        if (Application.isPlaying)
-        {
-            OnTriggerStayEvent?.Invoke(other);
-        }
-    }
-    void OnTriggerExit(Collider other)
-    {
-        if (Application.isPlaying)
-        {
-            OnTriggerExitEvent?.Invoke(other);
-        }
     }
     #endregion
 
     #region Player Methods
 
-    #region Setup Methods
+    #region Helpers for Mode
+    private bool IsSideScroll => camera2DType == Camera2DType.SideScroll;
+    private bool IsTopDown => camera2DType == Camera2DType.TopDown;
+    #endregion
 
+    #region Setup Methods
     public void SetExtensions()
     {
         extensions = GetComponents<PlayerExtension>();
-        foreach (var extension in extensions)
-        {
-            extension.OnStart(this);
-        }
+        foreach (var extension in extensions) extension.OnStart(this);
     }
 
     public void SetUpdate()
     {
         OnUpdate = null;
-        OnUpdate += CheckGrounded;
-        OnUpdate += JumpHandler;
+        OnUpdate += CheckGrounded2D;
 
-        OnUpdate += HandleMouseLook;
+        if (IsSideScroll) OnUpdate += JumpHandler2D;
+        // No mouse-look in 2D; keep slot for parity if you later add aim
+        // OnUpdate += HandleAim2D;
     }
 
     public void SetFixedUpdate()
     {
         OnFixedUpdate = null;
-        OnFixedUpdate += ApplyGravity;
-        OnFixedUpdate += Move;
 
-    }
-
-    public void SetSpawnPoint(Vector3 spawnPoint)
-    {
-        this.spawnPoint = spawnPoint;
-    }
-
-    void SetUpCamera()
-    {
-        switch (cameraType)
+        if (IsSideScroll)
         {
-            case CameraType.FirstPerson:
-                tpsCamera.gameObject.SetActive(false);
-                camera.gameObject.SetActive(true);
-                camera.transform.position = fpsCameraPivot.position;
-                camera.transform.rotation = Quaternion.Euler(transform.forward);
-                camera.fieldOfView = cameraFOV;
-                break;
-            case CameraType.ThirdPerson:
-                tpsCamera.gameObject.SetActive(true);
-                camera.gameObject.SetActive(false);
-                tpsVirtualCamera.GetComponent<CinemachineCamera>().Lens.FieldOfView = cameraFOV;
-                tpsVirtualCamera.CameraDistance = cameraDistance;
-                tpsVirtualCamera.CameraSide = cameraSide;
-                tpsVirtualCamera.ShoulderOffset.y = yOffset;
-                break;
+            OnFixedUpdate += ApplyGravity2D;
+            OnFixedUpdate += MoveSideScroll2D;
         }
-
-    }
-
-    #endregion
-
-    #region Movement Methods
-    void Move()
-    {
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
-
-        Vector3 move;
-        if (canMove)
+        else
         {
-            move = (transform.right * horizontal + transform.forward * vertical).normalized;
-            rigidbody.linearVelocity = new Vector3(move.x * Speed, rigidbody.linearVelocity.y, move.z * Speed);
-            animator.SetFloat("MoveX", horizontal);
-            animator.SetFloat("MoveY", vertical);
-            animator.SetBool("isRun", horizontal != 0 || vertical != 0);
+            OnFixedUpdate += MoveTopDown2D;
         }
     }
-    public void JumpHandler()
+
+    public void SetSpawnPoint(Vector3 spawnPoint) => this.spawnPoint = spawnPoint;
+
+    void SetUpCamera2D()
     {
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        if (camera == null) camera = Camera.main;
+        if (camera != null)
         {
-            lastJumpPressedTime = Time.time;
-        }
-        if (Time.time - lastJumpPressedTime <= jumpBufferTime && Time.time - lastGroundedTime <= coyoteTime)
-        {
-            Jump();
-            lastJumpPressedTime = -999f; // Reset to prevent double fire
-        }
-    }
-    public void Jump()
-    {
-        animator.SetTrigger("jump");
-        rigidbody.linearVelocity = new Vector3(rigidbody.linearVelocity.x, 0f, rigidbody.linearVelocity.z);
-        rigidbody.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-    }
-    #endregion
-
-    #region Graivty Methods
-
-    void ApplyGravity()
-    {
-        Debug.Log("Applying Gravity");
-        float _fallMultiplier = canApplyGravity ? 1 : fallMultiplier;
-        if (rigidbody.linearVelocity.y <= 0)
-        {
-            rigidbody.linearVelocity += Vector3.up * Physics.gravity.y * (_fallMultiplier - 1) * Time.deltaTime;
-        }
-        else if (rigidbody.linearVelocity.y > 0 && !Input.GetButton("Jump"))
-        {
-            rigidbody.linearVelocity += Vector3.up * Physics.gravity.y * (gravityMultiplier - 1) * Time.deltaTime;
-        }
-        if (isGrounded && rigidbody.linearVelocity.y < 0)
-        {
-           rigidbody.linearVelocity = new Vector3(rigidbody.linearVelocity.x, -2f, rigidbody.linearVelocity.z);
+            camera.orthographic = true;
+            camera.transform.position = new Vector3(transform.position.x, transform.position.y, cameraZOffset);
         }
 
-
-    }
-    void CheckGrounded()
-    {
-        Vector3 center = transform.position + capsuleCollider.center;
-        float radius = capsuleCollider.radius * 0.95f;
-        float height = capsuleCollider.height * 0.5f - radius;
-
-        Vector3 point1 = center + Vector3.up * height;
-        Vector3 point2 = center - Vector3.up * height;
-
-        Vector3 direction = Vector3.down;
-        float distance = 0.2f;
-
-        RaycastHit[] hits = Physics.CapsuleCastAll(
-            point1, point2, radius, direction, distance,
-            ~0, // Everything
-            QueryTriggerInteraction.Ignore
-        );
-
-        isGrounded = false;
-
-        foreach (RaycastHit hit in hits)
+        if (vcam2D != null)
         {
-            if (hit.collider != capsuleCollider)
+            vcam2D.Follow = transform;
+            var cmCamera = vcam2D;
+            cmCamera.Lens.OrthographicSize = cameraOrthoSize;
+
+            // Tweak body component offset if present
+            var posComposer = cmCamera.GetComponent<Unity.Cinemachine.CinemachinePositionComposer>();
+            if (posComposer != null)
             {
-                isGrounded = true;
-                break;
+                // followOffset is Vector2 in your script – PositionComposer expects Vector3
+                posComposer.TargetOffset = new Vector3(followOffset.x, followOffset.y, 0f);
+            }
+
+            // Confiner2D: assign shape and refresh caches (CM3)
+            if (useConfiner && confiner2D != null)
+            {
+                confiner2D.BoundingShape2D = confinerShape2D;
+
+                // Rebuild the polygon cache if points/scale/rotation changed
+                confiner2D.InvalidateBoundingShapeCache();
+
+                // If you change orthographic size or FOV at runtime, refresh lens cache too
+                confiner2D.InvalidateLensCache();
             }
         }
     }
-
-
     #endregion
 
-    void HandleMouseLook()
+    #region Movement – SideScroll
+    void MoveSideScroll2D()
     {
-        if (!canRotateCamera) return;
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+        if (!canMove || rigidbody == null) return;
 
-        if (cameraType == CameraType.FirstPerson)
+        float horizontal = Input.GetAxis("Horizontal");
+        Vector2 vel = rigidbody.linearVelocity;
+        vel.x = horizontal * Speed;
+        rigidbody.linearVelocity = vel;
+
+        animator?.SetFloat("MoveX", horizontal);
+        animator?.SetFloat("MoveY", 0f);
+        animator?.SetBool("isRun", Mathf.Abs(horizontal) > 0.001f);
+
+        // Optional sprite flip by X movement
+        if (autoFlipSpriteX && _spriteRenderer != null && Mathf.Abs(horizontal) > 0.001f)
+            _spriteRenderer.flipX = horizontal < 0f;
+    }
+
+    public void JumpHandler2D()
+    {
+        if (Input.GetButtonDown("Jump"))
+            lastJumpPressedTime = Time.time;
+
+        if ((Time.time - lastJumpPressedTime) <= jumpBufferTime &&
+            (Time.time - lastGroundedTime) <= coyoteTime &&
+            isGrounded)
         {
-            transform.Rotate(Vector3.up * mouseX);
-            xRotation -= mouseY;
-            xRotation = Mathf.Clamp(xRotation, -90f, 90f);
-            camera.transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+            Jump2D();
+            lastJumpPressedTime = -999f; // prevent double fire
         }
-        else if (cameraType == CameraType.ThirdPerson)
+    }
+
+    public void Jump2D()
+    {
+        animator?.SetTrigger("jump");
+        var v = rigidbody.linearVelocity;
+        v.y = 0f;
+        rigidbody.linearVelocity = v;
+        rigidbody.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        isGrounded = false;
+    }
+    #endregion
+
+    #region Movement – TopDown
+    void MoveTopDown2D()
+    {
+        if (!canMove || rigidbody == null) return;
+
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
+        Vector2 dir = new Vector2(horizontal, vertical);
+        if (dir.sqrMagnitude > 1f) dir.Normalize();
+
+        rigidbody.linearVelocity = dir * Speed;
+
+        animator?.SetFloat("MoveX", horizontal);
+        animator?.SetFloat("MoveY", vertical);
+        animator?.SetBool("isRun", dir.sqrMagnitude > 0.001f);
+
+        // Optional face movement direction for top-down (flipX not ideal here)
+        if (autoFlipSpriteX && _spriteRenderer != null && Mathf.Abs(horizontal) > 0.001f)
+            _spriteRenderer.flipX = horizontal < 0f;
+    }
+    #endregion
+
+    #region Gravity & Ground Check (2D)
+    void ApplyGravity2D()
+    {
+        if (!IsSideScroll) return;
+
+        float _fallMult = canApplyGravity ? fallMultiplier : 1f;
+
+        if (rigidbody.linearVelocity.y < 0)
         {
-            tpsYaw += mouseX;
-            tpsPitch -= mouseY;
-            tpsPitch = Mathf.Clamp(tpsPitch, -20f, 60f);
-            tpsCameraPivot.rotation = Quaternion.Euler(tpsPitch, tpsYaw, 0f);
-            transform.rotation = Quaternion.Euler(0f, tpsYaw, 0f);
+            // Falling
+            rigidbody.linearVelocity += Vector2.up * Physics2D.gravity.y * (_fallMult - 1f) * Time.fixedDeltaTime;
+        }
+        else if (rigidbody.linearVelocity.y > 0 && !Input.GetButton("Jump"))
+        {
+            // Early jump release
+            rigidbody.linearVelocity += Vector2.up * Physics2D.gravity.y * (gravityMultiplier - 1f) * Time.fixedDeltaTime;
+        }
+
+        // Small downward stick when grounded
+        if (isGrounded && rigidbody.linearVelocity.y < 0)
+            rigidbody.linearVelocity = new Vector2(rigidbody.linearVelocity.x, -2f);
+    }
+
+    void CheckGrounded2D()
+    {
+        if (!IsSideScroll) { isGrounded = true; return; }
+        if (capsule2D == null) { isGrounded = true; return; }
+
+        // Cast a small box beneath the collider
+        Bounds b = capsule2D.bounds;
+        float skin = 0.02f;
+        Vector2 size = new Vector2(b.size.x * 0.95f, skin);
+        Vector2 origin = new Vector2(b.center.x, b.min.y - skin * 0.5f);
+
+        RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, groundCheckDistance,
+                                             ~0); // Ignore trigger handled by physics settings
+
+        bool wasGrounded = isGrounded;
+        isGrounded = hit.collider != null;
+
+        if (isGrounded) lastGroundedTime = Time.time;
+
+        // Land event (optional: hook via extensions)
+        if (!wasGrounded && isGrounded)
+        {
+            // Could trigger landing animation/sound here if needed
+        }
+    }
+    #endregion
+
+    #region Stamina / Damage / Respawn
+    private void RegenerateStamina()
+    {
+        if (currentstamina < maxstamina && canGenerateStamina)
+        {
+            currentstamina += staminaRegenRate * Time.deltaTime;
+            if (currentstamina > maxstamina) currentstamina = maxstamina;
+        }
+    }
+
+    public void TakeDamage(float amount)
+    {
+        if (canHit)
+        {
+            currenthealth -= Mathf.Max(amount, 0);
+            animator?.SetTrigger("GetHit");
+            if (currenthealth <= 0)
+            {
+                currenthealth = 0;
+                Respawn();
+            }
+        }
+        else
+        {
+            canHit = true;
+            animator?.SetBool("isBlocking", false);
         }
     }
 
     public void Respawn()
     {
-        rigidbody.linearVelocity = Vector3.zero;
-        Debug.Log("Respawning");
-        if (lastCheckpoint == Vector3.zero)
-        {
-            Debug.Log("Last Checkpoint is null");
-            this.transform.position = spawnPoint;
-        }
-        else this.transform.position = lastCheckpoint;
-
+        rigidbody.linearVelocity = Vector2.zero;
+        Vector3 target = lastCheckpoint == Vector3.zero ? spawnPoint : lastCheckpoint;
+        transform.position = target;
         currenthealth = maxhealth;
     }
-    //Done
+
     public float GetAnimationLength(string animationName)
     {
+        if (animator == null || animator.runtimeAnimatorController == null) return 0f;
         foreach (AnimationClip clip in animator.runtimeAnimatorController.animationClips)
-        {
-            if (clip.name == animationName)
-            {
-                return clip.length;
-            }
-        }
+            if (clip.name == animationName) return clip.length;
         return 0f;
     }
+    #endregion
 
+    #region 2D Physics Events
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (Application.isPlaying) OnCollisionEnterEvent?.Invoke(collision);
+    }
+    void OnCollisionStay2D(Collision2D collision)
+    {
+        if (Application.isPlaying) OnCollisionStayEvent?.Invoke(collision);
+    }
+    void OnCollisionExit2D(Collision2D collision)
+    {
+        if (Application.isPlaying) OnCollisionExitEvent?.Invoke(collision);
+    }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (Application.isPlaying) OnTriggerEnterEvent?.Invoke(other);
+    }
+    void OnTriggerStay2D(Collider2D other)
+    {
+        if (Application.isPlaying) OnTriggerStayEvent?.Invoke(other);
+    }
+    void OnTriggerExit2D(Collider2D other)
+    {
+        if (Application.isPlaying) OnTriggerExitEvent?.Invoke(other);
+    }
     #endregion
 
     #region Gizmos
-    //Done
     void OnDrawGizmosSelected()
     {
+        if (capsule2D == null) return;
 
-        Vector3 start = transform.position + capsuleCollider.center;
-        float radius = capsuleRadius * 0.95f;
-        float height = capsuleHeight * 0.5f - radius;
+        Bounds b = capsule2D.bounds;
+        float skin = 0.02f;
+        Vector2 size = new Vector2(b.size.x * 0.95f, skin);
+        Vector3 origin = new Vector3(b.center.x, b.min.y - skin * 0.5f, 0f);
+        Vector3 p1 = origin + new Vector3(-size.x * 0.5f, 0f, 0f);
+        Vector3 p2 = origin + new Vector3(size.x * 0.5f, 0f, 0f);
 
-        Vector3 point1 = start + Vector3.up * height;
-        Vector3 point2 = start - Vector3.up * height - Vector3.up * groundCheckDistance;
-
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(point1 - Vector3.up * groundCheckDistance, radius);
-        Gizmos.DrawWireSphere(point2, radius);
-        Gizmos.DrawLine(point1 - Vector3.up * groundCheckDistance + Vector3.left * radius, point2 + Vector3.left * radius);
-        Gizmos.DrawLine(point1 - Vector3.up * groundCheckDistance + Vector3.right * radius, point2 + Vector3.right * radius);
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawLine(p1, p2);
+        Gizmos.DrawWireSphere(p1, 0.02f);
+        Gizmos.DrawWireSphere(p2, 0.02f);
     }
-
     #endregion
 
+    #endregion
 }

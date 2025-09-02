@@ -1,27 +1,38 @@
-using Unity.VisualScripting;
 using UnityEngine;
-[RequireComponent(typeof(Rigidbody))]
+
+[RequireComponent(typeof(Rigidbody2D))]
 public class InteractableObject : MonoBehaviour
 {
-    [SerializeField] bool usePhysic = true;
+    [Header("Physics")]
+    [SerializeField] bool usePhysic = true;        // Dynamic if true, Kinematic if false
     [SerializeField] bool useGravity = true;
     [SerializeField] bool isTrigger = false;
+
     private ObjectEffect[] effects;
+    private Rigidbody2D rb2d;
+
     void Start()
     {
-        GetComponent<Rigidbody>().isKinematic = !usePhysic;
+        rb2d = GetComponent<Rigidbody2D>();
+
+        // Rigidbody2D config
+        rb2d.bodyType = usePhysic ? RigidbodyType2D.Dynamic : RigidbodyType2D.Kinematic;
         if (isTrigger) useGravity = false;
-        GetComponent<Rigidbody>().useGravity = useGravity;
+        rb2d.gravityScale = useGravity ? 1f : 0f;
+
         effects = GetComponents<ObjectEffect>();
-        EnsureColliderExists();
-        EnsureRigidbodyExists();
-        EnsureIsTrigger();
+
+        EnsureRigidbodyExists2D();
+        EnsureColliderExists2D();
+        EnsureIsTrigger2D();
     }
-    void OnCollisionEnter(Collision collision)
+
+    // ----- COLLISION (2D) -----
+    void OnCollisionEnter2D(Collision2D collision)
     {
         // First try to get Player directly from the colliding object
         Player player = collision.gameObject.GetComponent<Player>();
-        
+
         if (player != null)
         {
             Debug.Log($"Player with Player Hit: {collision.gameObject.name}");
@@ -29,9 +40,9 @@ public class InteractableObject : MonoBehaviour
         }
         else if (collision.gameObject.CompareTag("Player"))
         {
-            // If it has Player tag but no Player, search in hierarchy
+            // If tagged Player but no Player component, search in hierarchy
             player = FindPlayerInHierarchy(collision.gameObject);
-            
+
             if (player != null)
             {
                 Debug.Log($"Player found in hierarchy: {player.gameObject.name}");
@@ -44,19 +55,19 @@ public class InteractableObject : MonoBehaviour
         }
         else
         {
-            // Debug: Log all collisions to help troubleshoot
-            Debug.Log($"Collision detected with: {collision.gameObject.name} (Tag: {collision.gameObject.tag})");
+            Debug.Log($"Collision2D with: {collision.gameObject.name} (Tag: {collision.gameObject.tag})");
         }
     }
-    public void OnTriggerEnter(Collider other)
+
+    // ----- TRIGGER (2D) -----
+    void OnTriggerEnter2D(Collider2D other)
     {
-        // First try to get Player directly from the colliding object
         Player player = other.gameObject.GetComponent<Player>();
-        
+
         if (player != null)
         {
             Debug.Log($"Player with Player Hit: {other.gameObject.name}");
-            foreach (ObjectEffect effect in effects)
+            foreach (var effect in effects)
             {
                 effect.ApplyEffect(player);
                 effect.ApplyEffect(other, player);
@@ -64,13 +75,12 @@ public class InteractableObject : MonoBehaviour
         }
         else if (other.gameObject.CompareTag("Player"))
         {
-            // If it has Player tag but no Player, search in hierarchy
             player = FindPlayerInHierarchy(other.gameObject);
-            
+
             if (player != null)
             {
                 Debug.Log($"Player found in hierarchy: {player.gameObject.name}");
-                foreach (ObjectEffect effect in effects)
+                foreach (var effect in effects)
                 {
                     effect.ApplyEffect(player);
                     effect.ApplyEffect(other, player);
@@ -83,151 +93,158 @@ public class InteractableObject : MonoBehaviour
         }
     }
 
+    // ----- HELPERS -----
     private Player FindPlayerInHierarchy(GameObject obj)
     {
-        // Search in parent hierarchy
-        Player parentPlayer = obj.GetComponentInParent<Player>();
-        if (parentPlayer != null)
-        {
-            return parentPlayer;
-        }
+        // Search in parent
+        var parentPlayer = obj.GetComponentInParent<Player>();
+        if (parentPlayer != null) return parentPlayer;
 
-        // Search in children hierarchy
-        Player childPlayer = obj.GetComponentInChildren<Player>();
-        if (childPlayer != null)
-        {
-            return childPlayer;
-        }
+        // Search in children
+        var childPlayer = obj.GetComponentInChildren<Player>();
+        if (childPlayer != null) return childPlayer;
 
-        // Search in siblings
+        // Search siblings via parent
         if (obj.transform.parent != null)
         {
-            Player siblingPlayer = obj.transform.parent.GetComponentInChildren<Player>();
+            var siblingPlayer = obj.transform.parent.GetComponentInChildren<Player>();
             if (siblingPlayer != null && siblingPlayer.gameObject != obj)
-            {
                 return siblingPlayer;
-            }
         }
 
         return null;
     }
-    protected virtual void HandlePlayerCollision(Collision playerCollision)
+
+    protected virtual void HandlePlayerCollision(Collision2D playerCollision)
     {
-        // Try to find Player from the collision
         Player player = playerCollision.gameObject.GetComponent<Player>();
         if (player == null && playerCollision.gameObject.CompareTag("Player"))
         {
             player = FindPlayerInHierarchy(playerCollision.gameObject);
         }
-        
-        Debug.Log($"Handling player collision with {effects.Length} effects");
-        foreach (ObjectEffect effect in effects)
+
+        if (effects == null) effects = GetComponents<ObjectEffect>();
+        Debug.Log($"Handling player collision with {(effects?.Length ?? 0)} effects");
+
+        if (player != null && effects != null)
         {
-            if (player != null)
+            foreach (var effect in effects)
             {
                 effect.ApplyEffect(player);
                 effect.ApplyEffect(playerCollision, player);
             }
         }
     }
-    protected virtual void HandlePlayerCollision(Collision collision, Player player)
+
+    protected virtual void HandlePlayerCollision(Collision2D collision, Player player)
     {
-        Debug.Log($"Handling player collision with {effects.Length} effects for player: {player.gameObject.name}");
-        foreach (ObjectEffect effect in effects)
+        if (effects == null) effects = GetComponents<ObjectEffect>();
+        Debug.Log($"Handling player collision with {(effects?.Length ?? 0)} effects for player: {player.gameObject.name}");
+
+        if (effects != null)
         {
-            effect.ApplyEffect(player);
-            effect.ApplyEffect(collision, player);
+            foreach (var effect in effects)
+            {
+                effect.ApplyEffect(player);
+                effect.ApplyEffect(collision, player);
+            }
         }
     }
-    private void EnsureColliderExists()
+
+    // ----- ENSURE COMPONENTS (2D) -----
+    private void EnsureColliderExists2D()
     {
         bool hasCollider = false;
-        if (GetComponent<Collider>() == null)
+
+        // If this object lacks a Collider2D, try to add one sensibly
+        var col = GetComponent<Collider2D>();
+        if (col == null)
         {
-            MeshFilter meshFilter = GetComponent<MeshFilter>();
-            if (meshFilter != null && meshFilter.sharedMesh != null)
+            // Prefer PolygonCollider2D if a SpriteRenderer with a Sprite exists (better fit)
+            var sr = GetComponent<SpriteRenderer>();
+            if (sr != null && sr.sprite != null)
             {
-                var meshCollider = gameObject.AddComponent<MeshCollider>();
-                meshCollider.sharedMesh = meshFilter.sharedMesh;
-                meshCollider.convex = false;
-                meshCollider.isTrigger = isTrigger;
-                Debug.Log($"Added MeshCollider to {gameObject.name}");
+                var poly = gameObject.AddComponent<PolygonCollider2D>();
+                poly.isTrigger = isTrigger;
+                hasCollider = true;
+                Debug.Log($"Added PolygonCollider2D to {gameObject.name}");
             }
-            else if (TryGetComponent<LODGroup>(out LODGroup lodGroup))
+            else
             {
-                foreach (Transform lodChild in lodGroup.transform)
+                // Fallback: BoxCollider2D sized to Renderer bounds if possible
+                var box = gameObject.AddComponent<BoxCollider2D>();
+                box.isTrigger = isTrigger;
+
+                // Best-effort sizing from Renderer bounds
+                var rend = GetComponent<Renderer>();
+                if (rend != null)
                 {
-                    if (lodChild.TryGetComponent<MeshRenderer>(out _) &&
-                        !lodChild.TryGetComponent<Collider>(out _) &&
-                        lodChild.TryGetComponent<MeshFilter>(out MeshFilter lodMeshFilter) &&
-                        lodMeshFilter.sharedMesh != null)
+                    var b = rend.bounds;
+                    box.size = new Vector2(b.size.x, b.size.y);
+                    box.offset = Vector2.zero;
+                }
+
+                hasCollider = true;
+                Debug.Log($"Added BoxCollider2D to {gameObject.name}");
+            }
+        }
+        else
+        {
+            hasCollider = true;
+        }
+
+        // If still nothing (very unlikely), scan children for sprites and add to first viable child
+        if (!hasCollider)
+        {
+            foreach (Transform child in transform)
+            {
+                if (child.GetComponent<Collider2D>() == null)
+                {
+                    var childSR = child.GetComponent<SpriteRenderer>();
+                    if (childSR != null && childSR.sprite != null)
                     {
-                        var lodCollider = lodChild.gameObject.AddComponent<MeshCollider>();
-                        lodCollider.sharedMesh = lodMeshFilter.sharedMesh;
-                        lodCollider.convex = true;
-                        lodCollider.isTrigger = isTrigger;
-                        Debug.Log($"Added MeshCollider to LOD child: {lodChild.name}");
+                        var childPoly = child.gameObject.AddComponent<PolygonCollider2D>();
+                        childPoly.isTrigger = isTrigger;
+                        Debug.Log($"Added PolygonCollider2D to child: {child.name}");
+                        hasCollider = true;
                         break;
                     }
                 }
             }
-            else
-            {
-                foreach (Transform child in transform)
-                {
-                    MeshFilter childMeshFilter = child.GetComponent<MeshFilter>();
-                    Collider childCollider = child.GetComponent<Collider>();
-                    if (childMeshFilter != null && childMeshFilter.sharedMesh != null && childCollider == null)
-                    {
-                        MeshCollider meshCollider = child.gameObject.AddComponent<MeshCollider>();
-                        meshCollider.sharedMesh = childMeshFilter.sharedMesh;
-                        meshCollider.convex = true;
-                        meshCollider.isTrigger = isTrigger;
-                        Debug.Log($"Added MeshCollider to child: {child.name}");
-                        hasCollider = true;
-                    }
-                }
-            }
         }
-        else { hasCollider = true; }
+
         if (!hasCollider)
         {
-            Debug.LogError("No Collider Can Be Added Please Add It Manually.");
+            Debug.LogError("No 2D Collider can be added automatically. Please add one manually.");
         }
     }
-    private void EnsureIsTrigger()
+
+    private void EnsureIsTrigger2D()
     {
-        Collider collider = GetComponent<Collider>();
-        if (collider != null)
+        // Set trigger flag on all Collider2D on this and immediate children (like your 3D version)
+        foreach (var c in GetComponentsInChildren<Collider2D>())
         {
-            collider.isTrigger = isTrigger;
-            Debug.Log($"Set {gameObject.name} collider as trigger.");
-        }
-        foreach (Transform child in transform)
-        {
-            Collider childCollider = child.GetComponent<Collider>();
-            if (childCollider != null)
-            {
-                childCollider.isTrigger = isTrigger;
-                Debug.Log($"Set {child.name} collider as trigger.");
-            }
+            c.isTrigger = isTrigger;
         }
     }
-    private void EnsureRigidbodyExists()
+
+    private void EnsureRigidbodyExists2D()
     {
-        if (GetComponent<Rigidbody>() == null)
-        {
-            gameObject.AddComponent<Rigidbody>();
-        }
+        if (rb2d == null)
+            rb2d = gameObject.AddComponent<Rigidbody2D>();
     }
+
+    // Allow runtime re-scan after adding/removing effects
     public void RefreshEffects()
     {
         effects = GetComponents<ObjectEffect>();
     }
 }
+
+// ----- EFFECT BASE (2D) -----
 public abstract class ObjectEffect : MonoBehaviour
 {
     public virtual void ApplyEffect(Player player) { }
-    public virtual void ApplyEffect(Collision playerCollision, Player player) { }
-    public virtual void ApplyEffect(Collider playerCollider, Player player) { }
+    public virtual void ApplyEffect(Collision2D playerCollision, Player player) { }
+    public virtual void ApplyEffect(Collider2D playerCollider, Player player) { }
 }
