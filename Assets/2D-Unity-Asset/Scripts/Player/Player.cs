@@ -81,24 +81,22 @@ public partial class Player : Singleton<Player>
     [HideInInspector] public bool canRotateCamera = true; // kept for API parity; unused in 2D
 
     #region Player Delegates
-    public delegate void FixedUpdateDelegate();
-    public FixedUpdateDelegate OnFixedUpdate;
-    public delegate void UpdateDelegate();
-    public UpdateDelegate OnUpdate;
-
-    // 2D versions; names preserved for minimal breakage
-    public delegate void CollisionEnterDelegate(Collision2D collision);
-    public CollisionEnterDelegate OnCollisionEnterEvent;
-    public delegate void CollisionStayDelegate(Collision2D collision);
-    public CollisionStayDelegate OnCollisionStayEvent;
-    public delegate void CollisionExitDelegate(Collision2D collision);
-    public CollisionExitDelegate OnCollisionExitEvent;
-    public delegate void TriggerEnterDelegate(Collider2D other);
-    public TriggerEnterDelegate OnTriggerEnterEvent;
-    public delegate void TriggerStayDelegate(Collider2D other);
-    public TriggerStayDelegate OnTriggerStayEvent;
-    public delegate void TriggerExitDelegate(Collider2D other);
-    public TriggerExitDelegate OnTriggerExitEvent;
+        public delegate void FixedUpdateDelegate();
+        public FixedUpdateDelegate OnFixedUpdate;
+        public delegate void UpdateDelegate();
+        public UpdateDelegate OnUpdate;
+        public delegate void CollisionEnterDelegate(Collision2D collision);
+        public CollisionEnterDelegate OnCollisionEnterEvent;
+        public delegate void CollisionStayDelegate(Collision2D collision);
+        public CollisionStayDelegate OnCollisionStayEvent;
+        public delegate void CollisionExitDelegate(Collision2D collision);
+        public CollisionExitDelegate OnCollisionExitEvent;
+        public delegate void TriggerEnterDelegate(Collider2D other);
+        public TriggerEnterDelegate OnTriggerEnterEvent;
+        public delegate void TriggerStayDelegate(Collider2D other);
+        public TriggerStayDelegate OnTriggerStayEvent;
+        public delegate void TriggerExitDelegate(Collider2D other);
+        public TriggerExitDelegate OnTriggerExitEvent;
     #endregion
 
     // Extensions
@@ -282,6 +280,7 @@ public partial class Player : Singleton<Player>
 
     public void JumpHandler2D()
     {
+        if (!IsSideScroll) return;
         if (Input.GetButtonDown("Jump"))
             lastJumpPressedTime = Time.time;
 
@@ -296,6 +295,7 @@ public partial class Player : Singleton<Player>
 
     public void Jump2D()
     {
+        if (!IsSideScroll) return;
         animator?.SetTrigger("jump");
         var v = rigidbody.linearVelocity;
         v.y = 0f;
