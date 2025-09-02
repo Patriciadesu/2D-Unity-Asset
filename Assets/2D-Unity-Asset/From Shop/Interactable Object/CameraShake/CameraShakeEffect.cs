@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class CameraShakeEffect2D : ObjectEffect
+public class CameraShakeEffect : ObjectEffect
 {
     [Header("Camera Shake Settings")]
     [SerializeField] private float shakeDuration = 0.5f;

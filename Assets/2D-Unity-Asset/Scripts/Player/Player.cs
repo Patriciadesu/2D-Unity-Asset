@@ -142,6 +142,9 @@ public partial class Player : Singleton<Player>
             staminaComponentStates.Clear();
             staminaComponentStates.AddRange(GetComponents<IUseStamina>());
 
+            if (!IsSideScroll) rigidbody.gravityScale = 0;
+            else rigidbody.gravityScale = 1;
+
             foreach (var extension in extensions) extension.OnStart(this);
 
             if (camera == null) camera = Camera.main;
