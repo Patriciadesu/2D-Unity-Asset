@@ -28,7 +28,9 @@ public partial class Player : Singleton<Player>
     #endregion
 
     #region Movement Settings (2D)
-    public float Speed => (speed + additionalSpeed) * speedMultiplier;
+    public float Speed => (speed + additionalSpeed) * speedMultiplier * axis;
+
+    public int axis = 1;
 
     [Foldout("Movement Settings", true), SerializeField, Range(0, 30)] private float speed = 6f;
 
