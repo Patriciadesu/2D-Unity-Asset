@@ -899,7 +899,7 @@ GameObject:
   - component: {fileID: 2140474700}
   - component: {fileID: 2140474702}
   - component: {fileID: 2140474696}
-  - component: {fileID: 2140474701}
+  - component: {fileID: 2140474703}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1095,31 +1095,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
---- !u!114 &2140474701
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2140474695}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a0a8b2697cd4cad48a9daba6770d6785, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  canPullObj:
-  - {fileID: 710122173}
-  - {fileID: 297087350}
-  - {fileID: 1215241531}
-  targetLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  range: 5
-  pullForce: 15
-  maxSpeed: 5
-  stopDistance: 1
-  autoScan: 1
-  rescanInterval: 0.25
 --- !u!95 &2140474702
 Animator:
   serializedVersion: 7
@@ -1142,6 +1117,20 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2140474703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2140474695}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7e628009d6135346abfcd3016ff8e59, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rewindKey: 114
+  rewindTime: 8
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
