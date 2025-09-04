@@ -12,10 +12,10 @@ TagManager:
   - Coin
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
+  - 'Player '
+  - Ground
+  - Walls
+  - Ghost
   - 
   - 
   - 
