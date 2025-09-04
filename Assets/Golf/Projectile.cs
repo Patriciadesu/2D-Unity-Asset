@@ -22,9 +22,9 @@ public class Projectile : MonoBehaviour
     {
         if (collision.CompareTag("Player"))
         {
-            Debug.Log("Hit Player");
+            Destroy(this.gameObject);
             collision.GetComponent<Player>()?.TakeDamage(damage);
-            Destroy(gameObject);
+
         }
     }
 }

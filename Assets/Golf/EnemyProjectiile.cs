@@ -10,9 +10,17 @@ public class EnemyProjectiile : MonoBehaviour
     private Transform player;
     private float cooldownTimer = 0f;
     private bool shootAtPlayer = true;
+    public float currentplayerposx;
+    public float lastplayerposx;
+
+    void Start()
+    {
+        player = GameObject.FindGameObjectWithTag("Player").transform;
+    }
 
     void Update()
     {
+        currentplayerposx = player.position.x;
         cooldownTimer -= Time.deltaTime;
 
         // ตรวจจับ Player
@@ -31,10 +39,12 @@ public class EnemyProjectiile : MonoBehaviour
         {
             player = null;
         }
+        lastplayerposx = player.position.x;
     }
 
     void Shoot()
     {
+        currentplayerposx -= lastplayerposx;
         GameObject proj = Instantiate(projectilePrefab, firePoint.position, Quaternion.identity);
         Projectile projScript = proj.GetComponent<Projectile>();
 
@@ -45,9 +55,24 @@ public class EnemyProjectiile : MonoBehaviour
         }
         else
         {
-            // ลูกสอง: ยิงไปด้านหน้าของ Player +1 X
-            Vector2 targetPos = new Vector2(player.position.x + 1f, player.position.y);
-            projScript.Setup(targetPos - (Vector2)firePoint.position);
+            if (currentplayerposx < 0)
+            {
+                // Player กำลังเคลื่อนที่ไปทางซ้าย
+                Vector2 targetPos = new Vector2(player.position.x - 1f, player.position.y);
+                projScript.Setup(targetPos - (Vector2)firePoint.position);
+            }
+            else if (currentplayerposx > 0)
+            {
+                // Player กำลังเคลื่อนที่ไปทางขวา
+                Vector2 targetPos = new Vector2(player.position.x + 1f, player.position.y);
+                projScript.Setup(targetPos - (Vector2)firePoint.position);
+            }
+            else
+            {
+                // Player หยุดนิ่ง: ยิงไปด้านหลังของ Player -1 X
+                Vector2 targetPos = new Vector2(player.position.x - 1f, player.position.y);
+                projScript.Setup(targetPos - (Vector2)firePoint.position);
+            }
         }
 
         shootAtPlayer = !shootAtPlayer; // สลับยิง
