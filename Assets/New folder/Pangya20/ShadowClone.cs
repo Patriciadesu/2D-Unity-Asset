@@ -3,6 +3,7 @@ using System.Collections;
 
 public class ShadowClone : PlayerExtension
 {
+    public KeyCode activateKey = KeyCode.Q;
     public GameObject clonePrefab;   // Assign your player prefab here
     public float cloneDuration = 5f; // How long the clone lasts
     public float cooldownTime = 3f;  // Cooldown before skill can be used again
@@ -25,7 +26,7 @@ public class ShadowClone : PlayerExtension
         GameObject clone = Instantiate(clonePrefab, transform.position, transform.rotation);
 
         
-        ShadowFollow shadow = clone.GetComponent<ShadowFollow>();
+        ShadowFollow shadow = clone.AddComponent<ShadowFollow>();
         if (shadow != null)
         {
             shadow.target = this.transform; 

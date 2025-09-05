@@ -33,3 +33,7 @@ public interface IPlayerUIContributor
     void OnStart();
     void OnUpdate();
 }
+public interface IInteruptPlayerMovement
+{
+    public bool isPerforming { get; }
+}
