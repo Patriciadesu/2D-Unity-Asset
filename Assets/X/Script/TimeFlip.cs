@@ -5,25 +5,32 @@ public class TimeFlip : PlayerExtension
 {
     [Foldout("Rewind Control", true)] public KeyCode rewindKey = KeyCode.R;       // ปุ่มย้อนเวลา (กดค้าง)
     [Foldout("Rewind Control", true)] public float rewindTime = 3f;
+    [Foldout("Rewind Control", true)] public float cooldown = 3f;
 
     GameObject player;
     Vector3 PositionToRewind;
     Quaternion RotationToRewind;
     float elapsed;
+    float cooldownTime;
+    bool isReady = false;
 
     void Start()
     {
         player = gameObject;
         PositionToRewind = player.transform.position;
+        RotationToRewind = player.transform .rotation;
     }
 
     // Update is called once per frame
     void Update()
     {
         elapsed += Time.deltaTime;
+        cooldownTime -= Time.deltaTime;
+        Debug.Log(cooldownTime);
 
         if (Input.GetKeyDown(rewindKey))
         {
+            onCoolDown();
             Rewind();
         }
 
@@ -39,11 +46,27 @@ public class TimeFlip : PlayerExtension
         {
             Debug.Log("Position has Saved!!");
             PositionToRewind = player.transform.position;
+            RotationToRewind = player.transform.rotation;
             elapsed = 0f;
+        }
+    }
+    void onCoolDown()
+    {
+        if (cooldownTime <= 0f)
+        {
+            isReady = true;
+            cooldownTime = cooldown;
+        }else
+        {
+            isReady = false;
         }
     }
     void Rewind()
     {
-        player.transform.position = PositionToRewind;
+        if (isReady)
+        {
+            player.transform.position = PositionToRewind;
+            player.transform.rotation = RotationToRewind;
+        }
     }
 }
