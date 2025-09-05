@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class TimeFlip : PlayerExtension
 {
-    [Foldout("Rewind Control", true)] public KeyCode rewindKey = KeyCode.R;       // ปุ่มย้อนเวลา (กดค้าง)
+    [Foldout("Rewind Control", true)] public KeyCode rewindKey = KeyCode.R;
     [Foldout("Rewind Control", true)] public float rewindTime = 3f;
     [Foldout("Rewind Control", true)] public float cooldown = 3f;
 
