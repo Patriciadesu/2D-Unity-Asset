@@ -119,7 +119,7 @@ public partial class Player : Singleton<Player>
 
     // --- Unified Animator Driving ---
     private Vector2 _lastNonZeroDir = Vector2.down;              // default face "front" (0,-1)
-    [SerializeField, Range(0f, 1f)] private float moveSpeedParamSmoothing = 0.08f;
+    private float moveSpeedParamSmoothing = 0.08f;
     private float _animMoveSpeed = 0f;                           // smoothed 0..1 for Idle<->Walk
 
     #region Unity Methods
@@ -296,7 +296,7 @@ public partial class Player : Singleton<Player>
         // Physics
         Vector2 vel = rigidbody.linearVelocity;
         vel.x = horizontal * Speed;
-        rigidbody.linearVelocity = vel;
+        rigidbody.linearVelocity += vel;
 
         // Animator (unified)
         UpdateAnimatorFromInput(horizontal, 0f);
@@ -339,7 +339,7 @@ public partial class Player : Singleton<Player>
         Vector2 dir = new Vector2(horizontal, vertical);
         if (dir.sqrMagnitude > 1f) dir.Normalize();
 
-        rigidbody.linearVelocity = dir * Speed;
+        rigidbody.linearVelocity += dir * Speed;
 
         // Animator (unified)
         UpdateAnimatorFromInput(horizontal, vertical);

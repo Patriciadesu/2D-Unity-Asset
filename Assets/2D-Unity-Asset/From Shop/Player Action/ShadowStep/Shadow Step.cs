@@ -6,15 +6,15 @@ using UnityEngine.UI;
 
 public class ShadowStep : PlayerExtension
 {
-    [Foldout("ShadowStep Control", true)] public KeyCode SpawnShadowKey = KeyCode.R;
-    [Foldout("ShadowStep Control", true)] public KeyCode TeleportToShadowKey = KeyCode.T;
-    [Foldout("ShadowStep Control", true)] public int ShadowCount = 3;
-    [Foldout("ShadowStep Control", true)] public GameObject ShadowStepPrefab;
-    [Foldout("ShadowStep Control", true), SerializeField] private List<GameObject> spawnedShadow = new List<GameObject>();
+    public KeyCode SpawnShadowKey = KeyCode.R;
+    public KeyCode TeleportToShadowKey = KeyCode.T;
+    public int maxShadowCount = 3;
+    [ShowAssetPreview]public GameObject shadowStepPrefab;
+    private List<GameObject> spawnedShadow = new List<GameObject>();
 
     [Foldout("ShadowStep UI", true)] public List<Image> shadowUI = new List<Image>();
     [Foldout("ShadowStep UI", true)] public Color selectedUIColor = Color.red;
-    [Foldout("ShadowStep UI", true)] public Color unselectedUIColor = Color.white;
+    [Foldout("ShadowStep UI", true)] public Color unselectedUIColor = Color.black;
     [Foldout("ShadowStep UI", true)] public Color emptyUIColor = new Color(1f, 1f, 1f, 0.35f);
 
     GameObject player;
@@ -23,7 +23,7 @@ public class ShadowStep : PlayerExtension
     // UI parent container (auto-created if needed)
     private RectTransform uiContainer;
 
-    void Start()
+    public override void OnStart(Player _player)
     {
         player = this.gameObject;
 
@@ -31,6 +31,11 @@ public class ShadowStep : PlayerExtension
         if (shadowUI == null || shadowUI.Count == 0)
         {
             CreateDefaultUI();
+        }
+
+        if (shadowStepPrefab == null)
+        {
+            shadowStepPrefab = Resources.Load<GameObject>("Shadow");
         }
 
         UIUpdate();
@@ -51,10 +56,10 @@ public class ShadowStep : PlayerExtension
         Vector2 playerPosition = player.transform.position;
         playerPosition.y -= 0.3562498f;
 
-        GameObject shadow = Instantiate(ShadowStepPrefab, playerPosition, player.transform.rotation);
+        GameObject shadow = Instantiate(shadowStepPrefab, playerPosition, player.transform.rotation);
         spawnedShadow.Add(shadow);
 
-        while (spawnedShadow.Count > Mathf.Max(0, ShadowCount))
+        while (spawnedShadow.Count > Mathf.Max(0, maxShadowCount))
         {
             var oldest = spawnedShadow[0];
             spawnedShadow.RemoveAt(0);
