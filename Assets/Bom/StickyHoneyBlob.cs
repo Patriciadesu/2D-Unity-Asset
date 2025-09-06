@@ -112,8 +112,8 @@ public class StickyHoneyBlob : ObjectEffect
             if (rb != null)
             {
                 if (!originalDrags.ContainsKey(player))
-                    originalDrags[player] = rb.drag;
-                rb.drag = rb.drag + Slower;
+                    originalDrags[player] = rb.linearDamping;
+                rb.linearDamping = rb.linearDamping + Slower;
             }
         }
     }
@@ -137,7 +137,7 @@ public class StickyHoneyBlob : ObjectEffect
         var rb = player.GetComponent<Rigidbody2D>();
         if (rb != null && originalDrags.TryGetValue(player, out float original))
         {
-            rb.drag = original;
+            rb.linearDamping = original;
             originalDrags.Remove(player);
         }
     }
