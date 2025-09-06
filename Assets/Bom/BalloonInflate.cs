@@ -1,87 +1,38 @@
 using UnityEngine;
 
-public class BalloonInflate : MonoBehaviour
+public class BalloonInflate : ObjectEffect
 {
-    private Rigidbody2D rb;
-
     [Header("Input")]
     public KeyCode inflateKey = KeyCode.Space;
 
     [Header("Float Settings")]
-    public float floatForce = 8f;        
-    public float gravityScaleNormal = 0.15f;
-    public float gravityScaleFloat = 0f; 
+    [Min(0f)] public float floatForce = 10f;  
+    [Min(0f)] public float gravityScaleNormal = 1f;
+    [Min(0f)] public float gravityScaleFloat = 0.1f;
+    
 
-    private float originalFallMult = 2.5f;
-    private float originalGravMult = 2.5f;
-
-    private bool isFloating = false;
-    private Player player; 
-
-    void Awake()
+    public override void ApplyEffect(Player player)
     {
-        rb = GetComponent<Rigidbody2D>();
-        player = Player.Instance; 
+        EnsureRuntimeOn(player);
     }
 
-    void Start()
+    public override void ApplyEffect(Collider2D playerCollider, Player player)
     {
-        if (rb != null) rb.gravityScale = gravityScaleNormal;
-
-        if (player != null)
-        {
-            originalFallMult = player.fallMultiplier;
-            originalGravMult = player.gravityMultiplier;
-        }
+        EnsureRuntimeOn(player);
     }
 
-    void Update()
+    public override void ApplyEffect(Collision2D playerCollision, Player player)
     {
-        if (Input.GetKeyDown(inflateKey)) StartFloat();
-        if (Input.GetKeyUp(inflateKey))   StopFloat();
+        EnsureRuntimeOn(player);
     }
 
-    void FixedUpdate()
+    private void EnsureRuntimeOn(Player player)
     {
-        if (isFloating && rb != null)
-        {
-            rb.AddForce(Vector2.up * floatForce, ForceMode2D.Force);
-        }
-    }
+        if (player == null) return;
+    
+        var runtime = player.GetComponent<BalloonFloatRuntime>();
+        if (runtime == null) runtime = player.gameObject.AddComponent<BalloonFloatRuntime>();
 
-    void StartFloat()
-    {
-        isFloating = true;
-
-        if (rb != null)
-        {
-            rb.gravityScale = gravityScaleFloat;
-
-            if (rb.linearVelocity.y < 0f)
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
-        }
-
-        if (player != null)
-        {
-            originalFallMult = player.fallMultiplier;
-            originalGravMult = player.gravityMultiplier;
-
-            player.fallMultiplier = 1f;
-            player.gravityMultiplier = 1f;
-        }
-    }
-
-    void StopFloat()
-    {
-        isFloating = false;
-
-        if (rb != null)
-            rb.gravityScale = gravityScaleNormal;
-
-        if (player != null)
-        {
-            player.fallMultiplier = originalFallMult;
-            player.gravityMultiplier = originalGravMult;
-        }
+        runtime.Configure(inflateKey, floatForce, gravityScaleNormal, gravityScaleFloat);
     }
 }
