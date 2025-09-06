@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class Enemy : MonoBehaviour
+public class Enemy : Entity
 {
     public float detectionRadius = 5f;    // How far the enemy can detect the player
     public float moveSpeed = 3f;          // Movement speed

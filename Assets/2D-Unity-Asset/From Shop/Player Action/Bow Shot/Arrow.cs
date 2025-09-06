@@ -7,19 +7,19 @@ public class Arrow : MonoBehaviour
     {
         damage = _damage;
     }
-    public void OnCollisionEnter(Collision collision)
+    public void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.TryGetComponent<Boss>(out Boss boss))
+        if (collision.gameObject.TryGetComponent<Entity>(out Entity entity))
         {
-            boss.TakeDamage(damage);
+            entity.TakeDamage(damage);
             Destroy(this.gameObject);
         }
     }
-    public void OnTriggerEnter(Collider other)
+    public void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.TryGetComponent<Boss>(out Boss boss))
+        if (other.TryGetComponent<Entity>(out Entity entity))
         {
-            boss.TakeDamage(damage);
+            entity.TakeDamage(damage);
             Destroy(this.gameObject);
         }
     }
