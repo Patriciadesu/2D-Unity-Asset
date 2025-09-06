@@ -954,8 +954,7 @@ MonoBehaviour:
   clonePrefab: {fileID: 2461172852517414101, guid: 14d447237b46e4e45bc52dc4f478125e, type: 3}
   cloneDuration: 10
   maxClones: 3
-  followSpeed: 5
-  followDistance: 1.07
+  followSpeed: 4.1
   cooldownTime: 1
 --- !u!114 &788923201
 MonoBehaviour:
@@ -971,8 +970,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dashKey: 304
   cooldown: 1
-  dashForce: 3
-  dashDuration: 0.2
+  dashForce: 7.17
+  dashDuration: 0.3
 --- !u!1 &825542232
 GameObject:
   m_ObjectHideFlags: 0
