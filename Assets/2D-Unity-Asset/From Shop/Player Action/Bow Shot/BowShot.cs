@@ -18,7 +18,7 @@ public class BowShot : PlayerExtension,IInteruptPlayerMovement
 
     [Header("Animation")]
     [Tooltip("Animator state name for the bow drawing blend-tree (2D directional).")]
-    public string bowStateName = "Bow_Draw";
+    private string bowStateName = "Bow_Draw";
     [Tooltip("Normalized time to HOLD at full draw (1 = clip end).")]
     [Range(0f, 1f)] public float pauseTime = 1f;
     [Tooltip("Seconds it takes to reach 'pauseTime' (full draw).")]

@@ -5,7 +5,15 @@ public class StoreItemdata : MonoBehaviour
     public ItemData itemData;
 
 
-    private void OnTriggerEnter(Collider other)
+    void Start()
+    {
+        if (TryGetComponent<SpriteRenderer>(out SpriteRenderer renderer))
+        {
+            renderer.sprite = itemData.itemimage;
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
         {

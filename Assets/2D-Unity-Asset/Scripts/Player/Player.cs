@@ -36,7 +36,7 @@ public partial class Player : Singleton<Player>
 
     [Foldout("Movement Settings", true), SerializeField, Range(0, 30)] private float speed = 6f;
 
-    [Foldout("Movement Settings", true), ShowIf(nameof(IsSideScroll)), Range(0, 25)]
+    [Foldout("Movement Settings", true), ShowIf(nameof(IsSideScroll)), Range(0, 100)]
     public float jumpForce = 12f;
 
     [Foldout("Movement Settings", true), ShowIf(nameof(IsSideScroll)), Range(0, 10)]
@@ -51,7 +51,7 @@ public partial class Player : Singleton<Player>
     [HideInInspector] public float additionalSpeed = 0f;
 
 
-    public bool canHit = true;
+    [HideInInspector]public bool canHit = true;
     #endregion
 
     #region Movement Buffer
@@ -76,7 +76,7 @@ public partial class Player : Singleton<Player>
     [HideInInspector] public Vector3 lastCheckpoint;
     [HideInInspector] public Vector3 spawnPoint;
 
-    public bool isGrounded = true;
+    [HideInInspector] public bool isGrounded = true;
     [HideInInspector] public List<ICancleGravity> cancleGravityComponents = new List<ICancleGravity>();
     public bool canApplyGravity => cancleGravityComponents.TrueForAll(x => x.canApplyGravity);
     [HideInInspector] public List<IInteruptPlayerMovement> interuptPlayerMovementComponents = new List<IInteruptPlayerMovement>();
@@ -288,19 +288,17 @@ public partial class Player : Singleton<Player>
 
     #region Movement – SideScroll
     void MoveSideScroll2D()
-    {
-        if (!canMove || rigidbody == null) return;
+{
+    if (!canMove || rigidbody == null) return;
 
-        float horizontal = Input.GetAxis("Horizontal");
+    float horizontal = Input.GetAxis("Horizontal");
 
-        // Physics
-        Vector2 vel = rigidbody.linearVelocity;
-        vel.x = horizontal * Speed;
-        rigidbody.linearVelocity += vel;
+    var current = rigidbody.linearVelocity;
+    current.x = horizontal * Speed;
+    rigidbody.linearVelocity = current;   // <-- assign, don’t add
 
-        // Animator (unified)
-        UpdateAnimatorFromInput(horizontal, 0f);
-    }
+    UpdateAnimatorFromInput(horizontal, 0f);
+}
 
     public void JumpHandler2D()
     {

@@ -16,10 +16,10 @@ public class GhostDash : PlayerExtension, IInteruptPlayerMovement
     public string ghostLayerName => "Ghost";
 
     [Tooltip("Seconds between dashes.")]
-    public float cooldown = 5f;
+    public float cooldown = 1f;
 
     [Tooltip("Impulse force multiplier.")]
-    public float dashForce = 5f;
+    public float dashForce = 3f;
 
     [Tooltip("How long the ghost state lasts after dash (seconds).")]
     [Range(0.01f,0.3f)]public float dashDuration = 0.2f;
@@ -93,7 +93,7 @@ public class GhostDash : PlayerExtension, IInteruptPlayerMovement
         // Disable movement so AddForce isn’t overwritten
 
         // Apply impulse force once
-        rb.AddForce(lastMoveDir.normalized * dashForce, ForceMode2D.Impulse);
+        rb.AddForce(lastMoveDir.normalized * dashForce *10, ForceMode2D.Impulse);
 
         yield return new WaitForSeconds(dashDuration);
 
