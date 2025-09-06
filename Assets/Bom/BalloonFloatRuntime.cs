@@ -81,7 +81,7 @@ public class BalloonFloatRuntime : MonoBehaviour
         if (rb)
         {
             rb.gravityScale = gravFloat;  
-            rb.drag = floatDrag;           
+            rb.linearDamping = floatDrag;           
 
             if (rb.linearVelocity.y < 0f)
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
@@ -103,7 +103,7 @@ public class BalloonFloatRuntime : MonoBehaviour
         if (rb)
         {
             rb.gravityScale = gravNormal;
-            rb.drag = 0f;           
+            rb.linearDamping = 0f;           
         }
 
         if (player)

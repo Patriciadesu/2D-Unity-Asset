@@ -28,11 +28,11 @@ public class Enemy : MonoBehaviour
     }
 
     // Optional: Draw the detection circle in the editor
-  //  private void OnDrawGizmosSelected()
-    //{
-        //Gizmos.color = Color.red;
-        //Gizmos.DrawWireSphere(transform.position, detectionRadius);
-   // }
+  private void OnDrawGizmosSelected()
+   {
+      Gizmos.color = Color.red;
+      Gizmos.DrawWireSphere(transform.position, detectionRadius);
+   }
     void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Player"))
