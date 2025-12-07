@@ -22,4 +22,13 @@ public class PlaySoundEffect : ObjectEffect
             audioSource.Play();
         }
     }
+
+    public override void ApplyEffect(Player2DController player)
+    {
+        if (audioSource != null && clip != null && !audioSource.isPlaying)
+        {
+            audioSource.clip = clip;
+            audioSource.Play();
+        }
+    }
 }

@@ -26,7 +26,33 @@ public class VanishEffect : ObjectEffect
         }
     }
 
+    public override void ApplyEffect(Player2DController player)
+    {
+        if (player != null && !isVanishing)
+        {
+            StartCoroutine(VanishRoutine(player));
+            Debug.Log($"{gameObject.name} triggered vanish effect on {player.gameObject.name}");
+        }
+    }
+
     private System.Collections.IEnumerator VanishRoutine(Player player)
+    {
+        isVanishing = true;
+
+        yield return new WaitForSeconds(vanishDelay);
+
+        if (objectRenderer != null) objectRenderer.enabled = false;
+        if (objectCollider != null) objectCollider.enabled = false;
+
+        yield return new WaitForSeconds(returnDelay);
+
+        if (objectRenderer != null) objectRenderer.enabled = true;
+        if (objectCollider != null) objectCollider.enabled = true;
+
+        isVanishing = false;
+    }
+
+    private System.Collections.IEnumerator VanishRoutine(Player2DController player)
     {
         isVanishing = true;
 

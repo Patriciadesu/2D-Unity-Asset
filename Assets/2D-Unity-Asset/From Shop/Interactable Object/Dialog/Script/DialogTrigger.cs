@@ -21,6 +21,15 @@ public class DialogTrigger : ObjectEffect
         }
     }
 
+    public override void ApplyEffect(Player2DController player)
+    {
+        if (player != null)
+        {
+            TriggerDialog();
+            //Debug.Log($"{gameObject.name} triggered dialog - {player.gameObject.name} started dialog!");
+        }
+    }
+
     public void TriggerDialog()
     {
         DialogManager dialogManager = DialogManager.Instance;

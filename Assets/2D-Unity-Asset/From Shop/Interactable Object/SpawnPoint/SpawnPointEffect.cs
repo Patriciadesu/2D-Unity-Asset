@@ -16,4 +16,16 @@ public class SpawnPointEffect : ObjectEffect
             Debug.Log($"{gameObject.name} set spawn point for {player.gameObject.name} at {spawnPosition}");
         }
     }
+
+    public override void ApplyEffect(Player2DController player)
+    {
+        if (player != null)
+        {
+            Vector3 spawnPosition = transform.position;
+            spawnPosition.y += yOffset;
+
+            player.SetSpawnPoint(spawnPosition);
+            Debug.Log($"{gameObject.name} set spawn point for {player.gameObject.name} at {spawnPosition} (Player2DController)");
+        }
+    }
 }

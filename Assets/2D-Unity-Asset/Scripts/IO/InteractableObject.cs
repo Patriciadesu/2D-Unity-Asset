@@ -37,6 +37,16 @@ public class InteractableObject : MonoBehaviour
         {
             Debug.Log($"Player with Player Hit: {collision.gameObject.name}");
             HandlePlayerCollision(collision, player);
+            return;
+        }
+
+        // Try to get Player2DController
+        Player2DController player2D = collision.gameObject.GetComponent<Player2DController>();
+        if (player2D != null)
+        {
+            Debug.Log($"Player2DController Hit: {collision.gameObject.name}");
+            HandlePlayerCollision(collision, player2D);
+            return;
         }
         else if (collision.gameObject.CompareTag("Player"))
         {
@@ -72,6 +82,20 @@ public class InteractableObject : MonoBehaviour
                 effect.ApplyEffect(player);
                 effect.ApplyEffect(other, player);
             }
+            return;
+        }
+
+        // Try Player2DController
+        Player2DController player2D = other.gameObject.GetComponent<Player2DController>();
+        if (player2D != null)
+        {
+            Debug.Log($"Player2DController Hit: {other.gameObject.name}");
+            foreach (var effect in effects)
+            {
+                effect.ApplyEffect(player2D);
+                effect.ApplyEffect(other, player2D);
+            }
+            return;
         }
         else if (other.gameObject.CompareTag("Player"))
         {
@@ -140,6 +164,21 @@ public class InteractableObject : MonoBehaviour
     {
         if (effects == null) effects = GetComponents<ObjectEffect>();
         Debug.Log($"Handling player collision with {(effects?.Length ?? 0)} effects for player: {player.gameObject.name}");
+
+        if (effects != null)
+        {
+            foreach (var effect in effects)
+            {
+                effect.ApplyEffect(player);
+                effect.ApplyEffect(collision, player);
+            }
+        }
+    }
+
+    protected virtual void HandlePlayerCollision(Collision2D collision, Player2DController player)
+    {
+        if (effects == null) effects = GetComponents<ObjectEffect>();
+        Debug.Log($"Handling player collision with {(effects?.Length ?? 0)} effects for Player2DController: {player.gameObject.name}");
 
         if (effects != null)
         {
@@ -247,4 +286,9 @@ public abstract class ObjectEffect : MonoBehaviour
     public virtual void ApplyEffect(Player player) { }
     public virtual void ApplyEffect(Collision2D playerCollision, Player player) { }
     public virtual void ApplyEffect(Collider2D playerCollider, Player player) { }
+
+    // Overloads for Player2DController
+    public virtual void ApplyEffect(Player2DController player) { }
+    public virtual void ApplyEffect(Collision2D playerCollision, Player2DController player) { }
+    public virtual void ApplyEffect(Collider2D playerCollider, Player2DController player) { }
 }

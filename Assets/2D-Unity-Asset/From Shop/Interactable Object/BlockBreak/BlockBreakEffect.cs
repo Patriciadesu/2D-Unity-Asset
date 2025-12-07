@@ -104,6 +104,23 @@ public class BlockBreakEffect : ObjectEffect
             BreakBlock(hitPoint, hitNormal);
         }
     }
+
+    public override void ApplyEffect(Collision2D playerCollision, Player2DController player)
+    {
+        if (playerCollision.contacts == null || playerCollision.contacts.Length == 0)
+        {
+            Debug.LogWarning("No collision contacts found!");
+            return;
+        }
+
+        if (player != null && !hasBeenDestroyed)
+        {
+            Vector3 hitPoint = playerCollision.contacts[0].point;
+            Vector3 hitNormal = playerCollision.contacts[0].normal;
+            Debug.Log($"BlockBreakEffect triggered by {player.gameObject.name} at point: {hitPoint}");
+            BreakBlock(hitPoint, hitNormal);
+        }
+    }
     private void BreakBlock(Vector3 hitPoint, Vector3 hitNormal)
     {
         hasBeenDestroyed = true;

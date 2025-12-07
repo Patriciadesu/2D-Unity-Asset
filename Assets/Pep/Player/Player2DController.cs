@@ -140,6 +140,9 @@ public class Player2DController : MonoBehaviour
     private float lastGroundedTime;
     private float lastJumpPressedTime;
 
+    // Respawn variables
+    private Vector3 spawnPoint;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -149,6 +152,7 @@ public class Player2DController : MonoBehaviour
         // Initialize to prevent first frame issues
         lastJumpPressedTime = -1f;
         lastGroundedTime = -1f;
+        spawnPoint = transform.position;
     }
 
     void OnEnable()
@@ -348,13 +352,17 @@ public class Player2DController : MonoBehaviour
 
         wasGroundedLastFrame = isGrounded;
 
-        Vector2 position = (Vector2)transform.position + capsuleCollider.offset;
+        // Account for scale
+        Vector2 position = transform.TransformPoint(capsuleCollider.offset);
+        float scaleY = Mathf.Abs(transform.localScale.y);
+        float scaleX = Mathf.Abs(transform.localScale.x);
+        
         float castOriginOffset = 0.05f;
-        float distance = (colliderHeight * 0.5f) - castOriginOffset + groundCheckDistance;
+        float distance = (colliderHeight * scaleY * 0.5f) - castOriginOffset + groundCheckDistance;
 
         RaycastHit2D hit = Physics2D.CapsuleCast(
             position,
-            new Vector2(colliderWidth * 0.9f, 0.1f),
+            new Vector2(colliderWidth * scaleX * 0.9f, 0.1f),
             CapsuleDirection2D.Vertical,
             0f,
             Vector2.down,
@@ -386,10 +394,12 @@ public class Player2DController : MonoBehaviour
         if (showColliderBounds && capsuleCollider != null)
         {
             Gizmos.color = new Color(0f, 1f, 0f, 0.3f);
-            Vector2 pos = (Vector2)transform.position + capsuleCollider.offset;
+            Vector2 pos = transform.TransformPoint(capsuleCollider.offset);
+            float scaleY = Mathf.Abs(transform.localScale.y);
+            float scaleX = Mathf.Abs(transform.localScale.x);
 
-            float radius = colliderWidth * 0.5f;
-            float height = colliderHeight;
+            float radius = colliderWidth * scaleX * 0.5f;
+            float height = colliderHeight * scaleY;
 
             Gizmos.DrawWireSphere(pos + Vector2.up * (height * 0.5f - radius), radius);
             Gizmos.DrawWireSphere(pos + Vector2.down * (height * 0.5f - radius), radius);
@@ -407,10 +417,13 @@ public class Player2DController : MonoBehaviour
         if (showGroundCheck && canJump && capsuleCollider != null)
         {
             Gizmos.color = (Application.isPlaying && isGrounded) ? Color.green : Color.red;
-            Vector2 position = (Vector2)transform.position + capsuleCollider.offset;
-            float distance = (colliderHeight * 0.5f) + groundCheckDistance;
+            Vector2 position = transform.TransformPoint(capsuleCollider.offset);
+            float scaleY = Mathf.Abs(transform.localScale.y);
+            float scaleX = Mathf.Abs(transform.localScale.x);
+            
+            float distance = (colliderHeight * scaleY * 0.5f) + groundCheckDistance;
 
-            Vector2 size = new Vector2(colliderWidth * 0.9f, 0.1f);
+            Vector2 size = new Vector2(colliderWidth * scaleX * 0.9f, 0.1f);
             Vector2 bottomPos = position + Vector2.down * distance;
 
             Gizmos.DrawWireCube(bottomPos, size);
@@ -506,5 +519,19 @@ public class Player2DController : MonoBehaviour
         coyoteTime = 0f;
         jumpBufferTime = 0f;
         Debug.Log("Applied REALISTIC preset - no assistance, pure physics!");
+    }
+
+    // ----- RESPAWN SYSTEM -----
+    public void SetSpawnPoint(Vector3 newSpawnPoint)
+    {
+        spawnPoint = newSpawnPoint;
+        Debug.Log($"Spawn Point updated to: {spawnPoint}");
+    }
+
+    public void Respawn()
+    {
+        transform.position = spawnPoint;
+        if (rb != null) rb.linearVelocity = Vector2.zero; // Stop movement
+        Debug.Log("Player Respawned!");
     }
 }
